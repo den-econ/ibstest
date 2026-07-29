@@ -18,7 +18,7 @@ prepare.do
 analysis.do
 ```
 
-Hasil data yang bersih akan ada di folder "output", hasil gambar akan ada di folder "fig" dan hasil regresi akan ada di fodler "reg".
+Hasil summary stats ada di folder "tab", hasil gambar akan ada di folder "fig" dan hasil regresi akan ada di fodler "reg".
 
 ## Sitasi
 
