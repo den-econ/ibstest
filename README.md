@@ -1,21 +1,24 @@
 ## Introduction
 
-fills with what this repo is about. If there is a question about this repo, feel free to send an email to name(at)dewanekonomi.go.id
+Repository ini digunakan untuk mengetes pipeline workshop penggunaan data IBS dan IMK dari BPS. Workflow ini didasari pada data sample yang ada di local computers dari kamu. Repo ini masih bersifat sangat sementara. 
 
 ## How to use
 
 ### Requirements
 
+<!-- edit requirement ini -->
 Anda memerlukan instalasi Stata dan memerlukan paket `XTPMG`, `outreg2` dan `esttab`.
 
 Cara penggunaan:
 
-Gunakan IDE favorit anda. Lalu jalankan program-program berikut ini:
+Buka stata di folder yang sama dengan lokasi datanya, lalu jalankan kode berikut ini:
 
-1. prepare.do
-2. analysis.do
+```{stata}
+prepare.do
+analysis.do
+```
 
-Hasil data yang bersih akan ada di folder "data", hasil gambar akan ada di folder "fig" dan hasil regresi akan ada di fodler "reg".
+Hasil data yang bersih akan ada di folder "output", hasil gambar akan ada di folder "fig" dan hasil regresi akan ada di fodler "reg".
 
 ## Sitasi
 
