@@ -1,17 +1,23 @@
-## Introduction
+## Tentang repo ini
 
-Repository ini digunakan untuk mengetes pipeline workshop penggunaan data IBS dan IMK dari BPS. Workflow ini didasari pada data sample yang ada di local computers dari kamu. Repo ini masih bersifat sangat sementara. 
+Repository ini digunakan untuk mengetes pipeline workshop penggunaan data IBS dan IMK dari BPS. Workflow ini didasari pada data sample yang ada di local computers dari kamu. Repo ini masih bersifat sangat sementara.
 
-## How to use
+Repo ini dimaintain oleh Meizahra Afidatie, Krisna Gupta dan England Can.
+
+## Cara pakai
 
 ### Requirements
 
+Fork dulu repo ini ke komputer lokal anda.
+
 <!-- edit requirement ini -->
-Anda memerlukan instalasi Stata dan memerlukan paket `XTPMG`, `outreg2` dan `esttab`.
+Anda memerlukan instalasi Stata dan memerlukan paket  `outreg2` dan `esttab`.
 
 Cara penggunaan:
 
-Buka stata di folder yang sama dengan lokasi datanya, lalu jalankan kode berikut ini:
+1. pastikan data berlokasi di "data/raw/" supaya di-gitignored.
+
+2. Buka stata di folder yang sama dengan lokasi datanya, lalu jalankan kode berikut ini:
 
 ```{stata}
 prepare.do
