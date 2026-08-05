@@ -45,6 +45,9 @@ _quarto/
 # ── Large data files (use Dataverse or Zenodo instead) ───────
 data/raw/*
 
+# Processed panel (regenerate via code/1_prepare.do)
+data/firm_panel.dta
+
 # Exceptions: allow small reference files if needed
 # !data/raw/small_lookup_table.csv
 
