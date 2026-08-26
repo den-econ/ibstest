@@ -26,9 +26,8 @@
 		gen double g_va     = 100*(va/L.va         - 1)
 		gen double g_output = 100*(output/L.output - 1)
 
-		gen str12 period = "pre-crisis"
-		replace   period = "crisis"      if year >= `cy' & year <= `cy'+1
-		replace   period = "post-crisis" if year >  `cy'+1
+		gen str12 period = "pre-crisis"        // 2010-2019
+		replace   period = "crisis"      if year >= `cy'   // 2020-2022
 
 		export delimited using "$reg/2a_va_by_year.csv", replace
 		list year va g_va g_output period, noobs sep(0)
@@ -45,9 +44,8 @@
 		xtset isic2 year
 		gen double g_va = 100*(va/L.va - 1)
 
-		gen str12 period = "pre-crisis"
-		replace   period = "crisis"      if year >= `cy' & year <= `cy'+1
-		replace   period = "post-crisis" if year >  `cy'+1
+		gen str12 period = "pre-crisis"        // 2010-2019
+		replace   period = "crisis"      if year >= `cy'   // 2020-2022
 
 		collapse (mean) g_va, by(isic2 period)
 		export delimited using "$reg/2a_growth_by_sector.csv", replace

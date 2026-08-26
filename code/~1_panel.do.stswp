@@ -1,0 +1,128 @@
+* ==============================================================================
+* 1_panel.do  -- SECTION 1: assemble cleaned years -> data/firm_panel.dta
+* ------------------------------------------------------------------------------
+* Appends the per-year cleaned files (data/clean/ibs_YYYY.dta) into one panel.
+* Because each year was already standardised to the SAME schema by its own
+* mfg_YYYY.do, this append is safe -> no format/merge errors.
+*
+* Then checks whether the firm id is usable for linkage; if masked (like the
+* sample), falls back to the synthetic panel (data/ibs_panel_2010_2022.csv).
+*
+* DATA SOURCE ($source in MASTER.do): "raw" / "panel" / "auto" (see MASTER).
+*
+* "real" NOTE: values are nominal. For a deflated version, see [DEFLATOR] below.
+* ==============================================================================
+
+	display as text "== 1_panel: source = $source =="
+	global link_ok 0
+
+* ==============================================================================
+* (1) RAW PATH: append the cleaned per-year files
+* ==============================================================================
+if inlist("$source", "raw", "auto") {
+
+	clear
+	tempfile panel
+	save `panel', emptyok replace
+
+	foreach yr of global clean_years {
+		local f "$data/clean/ibs_`yr'.dta"
+		capture confirm file "`f'"
+		if _rc {
+			display as text "   (skip) not cleaned yet: ibs_`yr'.dta"
+			continue
+		}
+		use "`f'", clear
+		* force numeric so years append cleanly (some store numbers as text)
+		foreach v in output iinput va emp export {
+			capture destring `v', replace force
+		}
+		append using `panel'
+		save `panel', replace
+	}
+	use `panel', clear
+	save "$data/firm_panel.dta", replace
+
+	* --- detect: is the firm id usable for linkage? ---------------------------
+	*   If most years have only 1 distinct fid value (masked "***"), linkage
+	*   is impossible.
+	preserve
+		keep year fid
+		duplicates drop
+		bysort year: gen long nfid = _N
+		by year: keep if _n == 1
+		count if nfid <= 1
+		local nmasked = r(N)
+		count
+		local nyears  = r(N)
+	restore
+
+	if `nmasked' <= `nyears'/2 {
+		global link_ok 1
+		display as result "   firm id valid -> all sections can run from raw"
+	}
+	else {
+		display as text "   NOTE: firm id is masked in this data."
+		if "$source" == "auto" {
+			display as result "   -> falling back to the synthetic panel for testing."
+			global source "panel"
+		}
+		else {
+			display as error  "   -> sections 2c/2d/2e (need linkage) will be skipped."
+		}
+	}
+}
+
+* ==============================================================================
+* (2) PANEL PATH: ready-made synthetic panel (valid firm ids)
+* ==============================================================================
+if "$source" == "panel" {
+
+	local pfile "$data/ibs_panel_2010_2022.csv"
+	capture confirm file "`pfile'"
+	if _rc {
+		display as error "!! synthetic panel not found: `pfile'"
+		exit 601
+	}
+	display as text "   loading synthetic panel: ibs_panel_2010_2022.csv"
+
+	import delimited "`pfile'", clear case(lower)
+	capture rename ekspor export
+	gen str8 idscheme = "panel"                // continuous id -> linkage valid
+
+	foreach v in output iinput va emp export isic5 isic2 labcost year {
+		capture confirm variable `v'
+		if _rc gen double `v' = .
+	}
+	keep  fid idscheme year isic2 isic5 output iinput va emp export labcost
+	order fid idscheme year isic2 isic5 output iinput va emp export labcost
+	keep if isic2 >= 10 & isic2 <= 33
+
+	save "$data/firm_panel.dta", replace
+	global link_ok 1
+}
+
+* --- [DEFLATOR] (optional) -----------------------------------------------------
+*   If you have a sector-year price index (data/deflator.dta: isic2 year defl):
+*     use "$data/firm_panel.dta", clear
+*     merge m:1 isic2 year using "$data/deflator.dta", keep(1 3) nogen
+*     replace output = output/defl
+*     replace va     = va/defl
+*     save "$data/firm_panel.dta", replace
+
+* --- Labels & final save -------------------------------------------------------
+	use "$data/firm_panel.dta", clear
+	label var fid      "Firm identifier"
+	label var idscheme "Id scheme (link validity)"
+	label var year     "Year"
+	label var isic2    "ISIC 2-digit"
+	label var output   "Output (nominal)"
+	label var va       "Value added (nominal)"
+	label var emp      "Number of workers"
+	label var export   "Exports (nominal)"
+	label var labcost  "Labour cost (nominal)"
+	compress
+	save "$data/firm_panel.dta", replace
+
+	display as result "== panel saved: $data/firm_panel.dta (link_ok=$link_ok) =="
+	tab year

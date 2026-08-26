@@ -8,22 +8,30 @@
 *   3. Run:  do "code/MASTER.do"
 *
 * Time-saving flow on a limited machine:
-*   - Run 01_prepare only once (builds the panel & saves it to data/).
-*   - Once the panel is saved, turn the prepare trigger off (set to 0) and just
-*     switch on the lens you want to re-run. Each lens is self-contained.
+*   - Run Section 1 (cleaning + panel) only once (builds & saves data/firm_panel.dta).
+*   - Once the panel is saved, turn the Section 1 triggers off (set to 0) and just
+*     switch on the Section 2 step you want to re-run. Each step is self-contained.
 * ==============================================================================
 
 	capture log close
 	clear all
 	set more off
+	set varabbrev off        // IMPORTANT: exact variable names only, so e.g.
+	                         // "drop output" cannot accidentally match "output10"
 
 * ===================================================================== *
 * -------------------           Path               -------------------- *
 * ===================================================================== *
-*   All paths are set in SET_FILEPATHS.do (based on Stata's working folder).
-*   This line locates SET_FILEPATHS.do relative to the working folder.
+*   Set the project root for THIS machine (add your username + repo path below),
+*   then load SET_FILEPATHS.do from it. Do NOT rely on Stata's working folder.
 
-	do "`c(pwd)'/code/SET_FILEPATHS.do"
+	if "`c(username)'" == "meizahra" {
+		global root "/Users/meizahra/Documents/work/National Economic Council (NEC)/ibstest"
+	}
+	* fallback if your username isn't listed: use the current working folder
+	if "$root" == "" global root "`c(pwd)'"
+
+	do "$root/code/SET_FILEPATHS.do"
 
 * ===================================================================== *
 * -------------------           Setup              -------------------- *
@@ -36,23 +44,23 @@
 	*   "panel" : force from synthetic panel data/ibs_panel_2010_2022.csv (test).
 		global source       "auto"
 
-	*** (1) Range of years available in data/raw/
+	*** (1) Data range (2016 has no raw file, handled automatically)
 		global year_start   2010
 		global year_end     2022
 
-	*** (2) Crisis year & index base year
-		global crisis_year  2020        // COVID-19
-		global base_year    2019        // index base = 100 (year before crisis)
+	*** (2) Two periods (data is 2010-2022): pre-crisis 2010-2019, crisis 2020-2022
+		global crisis_year  2020        // COVID-19; year >= this = crisis period
+		global base_year    2019        // index base = 100 (last pre-crisis year)
 
 	*** (3) Firm size-class thresholds (number of workers) - AHN definition
 		global small_max    99          // Small : 20-99
 		global medium_max   499         // Medium: 100-499  (Large: 500+)
 
-	*** (4) Year pairs for the size transition matrix (Lens 4)
-		global pre_y0       2018        // pre-crisis: start -> end
+	*** (4) Year pairs (start -> end of each period) for the size transition matrix (2c)
+		global pre_y0       2010        // pre-crisis: start -> end
 		global pre_y1       2019
-		global post_y0      2021        // post-crisis: start -> end
-		global post_y1      2022
+		global crisis_y0    2020        // crisis:     start -> end
+		global crisis_y1    2022
 
 * ===================================================================== *
 * -----------------            Triggers             ----------------- *
@@ -60,7 +68,7 @@
 *   1 = run, 0 = skip.
 
 	*** Section 1 - build the panel (run once, then may be turned off)
-		local s1_prepare            1
+		local s1_prepare            1   // clean all years + append -> data/firm_panel.dta
 
 	*** Section 2 - cleaning & analysis
 		local s2a_growth            1   // 2a: output/value-added growth
@@ -68,6 +76,9 @@
 		local s2c_mobility          1   // 2c: mobility across size classes
 		local s2d_entry_exit        1   // 2d: entry/exit rate
 		local s2e_decomp            1   // 2e: employment-growth decomposition
+
+	*** Extra - also save result tables as Excel (.xlsx)
+		local s2_excel              1   // also write result tables as .xlsx
 
 * ===================================================================== *
 * -----------------            Do-files             ----------------- *
@@ -96,6 +107,20 @@
 		do "$code/2e_decomposition.do"
 	}
 
+	*** Save every result table (the output CSVs) also as Excel
+	if `s2_excel' == 1 {
+		foreach t in 2a_growth_by_period 2a_growth_by_sector 2a_va_by_year ///
+		             2b_index 2b_summary 2b_ulc ///
+		             2c_transition_pre 2c_transition_crisis ///
+		             2d_entry_exit 2e_decomp {
+			capture confirm file "$output/`t'.csv"
+			if !_rc {
+				import delimited "$output/`t'.csv", clear varnames(1) case(preserve)
+				export excel using "$output/`t'.xlsx", replace firstrow(variables)
+			}
+		}
+	}
+
 	timer off 1
 	timer list 1
-	display "Done. Tables -> $reg  |  Figures -> $fig"
+	display "Done. Results saved to: $output"

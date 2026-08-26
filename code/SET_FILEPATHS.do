@@ -14,19 +14,21 @@
 * $root manually in the "MANUAL OVERRIDE" block below.
 * ==============================================================================
 
-* --- (1) Determine the project root --------------------------------------------
-	global root "`c(pwd)'"
-
-* --- (2) MANUAL OVERRIDE (optional) --------------------------------------------
-*   Uncomment the line below and fill in the repo path if needed.
-*   global root "D:/path/to/ibstest"
+* --- (1) Project root ----------------------------------------------------------
+*   Normally $root is already set by MASTER.do. If you run THIS file on its own,
+*   it falls back to the path below -> edit it for your machine.
+	if "$root" == "" {
+		global root "/Users/meizahra/Documents/work/National Economic Council (NEC)/ibstest"
+	}
 
 * --- (3) Sub-folders (relative to $root) ---------------------------------------
 	global code   "$root/code"          // do-files
 	global data   "$root/data"          // processed panel
 	global raw    "$root/data/raw"      // raw BPS microdata (mfgYYYY.dta)
-	global reg    "$root/reg"           // table output (.csv)
-	global fig    "$root/fig"           // figure output (.png)
+	global output "$root/output"        // ALL results here (tables .csv + figures .png)
+	global reg    "$output"             // tables  -> output/
+	global fig    "$output"             // figures -> output/
+	capture mkdir "$output"
 
 * --- (4) Quick check so a wrong path is caught early ---------------------------
 	capture confirm file "$raw"

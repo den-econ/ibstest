@@ -36,14 +36,15 @@ Satu **master** mengontrol seluruh **sub-file** lewat sakelar nyala/mati.
 |------|--------|--------|
 | [`MASTER.do`](MASTER.do) | Kontrol pusat: setelan + trigger tiap sub-file | — |
 | [`SET_FILEPATHS.do`](SET_FILEPATHS.do) | Tetapkan semua path dari folder kerja Stata | — |
-| [`1_prepare.do`](1_prepare.do) | Harmonisasi data mentah → panel firm-year baku | `data/firm_panel.dta` |
-| [`2a_growth.do`](2a_growth.do) | Pertumbuhan output & nilai tambah | `reg/2a_*.csv` |
-| [`2b_jobless_growth.do`](2b_jobless_growth.do) | Produktivitas TK & *jobless growth* | `reg/2b_*.csv`, `fig/2b_jobless_growth.png` |
-| [`2c_size_mobility.do`](2c_size_mobility.do) | Matriks transisi kelas ukuran | `reg/2c_transition_*.csv` |
-| [`2d_entry_exit.do`](2d_entry_exit.do) | Entry/exit rate | `reg/2d_entry_exit.csv`, `fig/2d_entry_exit.png` |
-| [`2e_decomposition.do`](2e_decomposition.do) | Dekomposisi ekspansi/kontraksi TK | `reg/2e_decomp.csv` |
+| [`1_prepare.do`](1_prepare.do) | Bersihkan semua tahun (loop) + append → panel firm-year baku | `data/firm_panel.dta` |
+| [`2a_growth.do`](2a_growth.do) | Pertumbuhan output & nilai tambah | `output/2a_*.csv` |
+| [`2b_jobless_growth.do`](2b_jobless_growth.do) | Produktivitas TK & *jobless growth* | `output/2b_*.csv`, `output/2b_jobless_growth.png` |
+| [`2c_size_mobility.do`](2c_size_mobility.do) | Matriks transisi kelas ukuran | `output/2c_transition_*.csv` |
+| [`2d_entry_exit.do`](2d_entry_exit.do) | Entry/exit rate | `output/2d_entry_exit.csv`, `output/2d_entry_exit.png` |
+| [`2e_decomposition.do`](2e_decomposition.do) | Dekomposisi ekspansi/kontraksi TK | `output/2e_decomp.csv` |
 
-Tabel `.csv` → folder [`reg/`](../reg/) · Gambar `.png` → folder [`fig/`](../fig/).
+Semua hasil → folder [`output/`](../output/): tiap tabel disimpan **`.csv` + `.xlsx`**,
+gambar `.png`, plus **`firm_panel.xlsx`** (salinan Excel dataset olahan).
 
 Tiap sub-file **berdiri sendiri** (membaca `data/firm_panel.dta` dari disk), jadi
 bisa dijalankan ulang terpisah.
@@ -69,8 +70,8 @@ transisi.
 **Trigger:** set `1` (jalankan) atau `0` (lewati) untuk tiap langkah.
 
 ### Alur hemat waktu (komputer terbatas)
-1. Jalankan sekali dengan `prepare = 1` → panel tersimpan ke `data/firm_panel.dta`.
-2. Set `prepare = 0`, lalu nyalakan hanya lensa yang ingin dijalankan ulang.
+1. Jalankan sekali dengan `s1_prepare = 1` → panel tersimpan ke `data/firm_panel.dta`.
+2. Set `s1_prepare = 0`, lalu nyalakan hanya lensa yang ingin dijalankan ulang.
 
 ---
 
@@ -87,7 +88,10 @@ Satu baris = perusahaan × tahun. Nilai **nominal** (ribu Rp).
 | `output` `iinput` `va` | Output, input antara, nilai tambah |
 | `emp` | Jumlah tenaga kerja |
 | `export` | Nilai ekspor |
-| `labcost` | Biaya tenaga kerja (bila tersedia) |
+| `labcost` | Biaya tenaga kerja (olahan; bila tersedia) |
+| `w_prod` `w_nonprod` | Upah **mentah** pekerja produksi & non-produksi (input `labcost`, 2010–2018) |
+
+Disimpan sebagai **`.dta`** (di `data/firm_panel.dta`) **+ `.xlsx`** (di `output/firm_panel.xlsx`).
 
 ---
 
@@ -107,7 +111,7 @@ Satu baris = perusahaan × tahun. Nilai **nominal** (ribu Rp).
   tidak balanced, Lensa 5 & 6 akan informatif.
 
 - **Nominal vs riil.** Nilai masih nominal. Untuk versi riil, sisipkan deflasi per
-  sektor pada penanda `[DEFLATOR]` di `01_prepare.do`.
+  sektor pada penanda `[DEFLATOR]` di `1_prepare.do`.
 
 ---
 

@@ -7,9 +7,9 @@
 * cell = % of firms that moved. Built for the pre-crisis and post-crisis year
 * pairs (set in MASTER.do). A firm must appear in both years.
 *
-* Output:
-*   reg/2c_transition_pre.csv   ($pre_y0  -> $pre_y1)
-*   reg/2c_transition_post.csv  ($post_y0 -> $post_y1)
+* Output (into $reg = output/):
+*   2c_transition_pre.csv      pre-crisis pair ($pre_y0    -> $pre_y1)
+*   2c_transition_crisis.csv   crisis pair    ($crisis_y0 -> $crisis_y1)
 * ==============================================================================
 
 	display as text "== 2c: mobility across size classes =="
@@ -65,7 +65,7 @@
 	end
 
 * --- run for pre & post crisis -------------------------------------------------
-	_transmat $pre_y0  $pre_y1  "$reg/2c_transition_pre.csv"
-	_transmat $post_y0 $post_y1 "$reg/2c_transition_post.csv"
+	_transmat $pre_y0    $pre_y1    "$reg/2c_transition_pre.csv"
+	_transmat $crisis_y0 $crisis_y1 "$reg/2c_transition_crisis.csv"
 
-	display as result "   -> reg/2c_transition_pre.csv, reg/2c_transition_post.csv"
+	display as result "   -> 2c_transition_pre.csv, 2c_transition_crisis.csv"
