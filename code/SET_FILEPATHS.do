@@ -3,12 +3,6 @@
 * ------------------------------------------------------------------------------
 * Sets the folder locations for the whole pipeline.
 *
-* GOAL: plug-and-play across machines. By default, the project "root" is taken
-* from the folder where Stata is running (c(pwd)). So you just:
-*     - put this whole repo on any machine,
-*     - open Stata IN the repo folder (or cd into it),
-*     - run MASTER.do.
-* No need to edit paths per machine.
 *
 * If on another machine you CANNOT open Stata in the repo folder, simply set
 * $root manually in the "MANUAL OVERRIDE" block below.
