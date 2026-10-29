@@ -75,3 +75,8 @@ desktop.ini
 .idea/
 *.sublime-project
 *.sublime-workspace
+
+# Oversized data files — too big for GitHub (keep on disk, not in git)
+data/panel_imk_sintesis/imk_si_panel_1975_2025.dta
+data/panel_imk_sintesis/imk_panel_2017_2025.dta
+data/panel_imk_sintesis.zip

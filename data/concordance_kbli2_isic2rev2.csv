@@ -1,0 +1,25 @@
+kbli2,isic2_r2,kbli_label
+10,Makanan/minuman/tembakau,Makanan
+11,Makanan/minuman/tembakau,Minuman
+12,Makanan/minuman/tembakau,Tembakau
+13,TPT & kulit,Tekstil
+14,TPT & kulit,Pakaian jadi
+15,TPT & kulit,Kulit & alas kaki
+16,Kayu & furnitur,Kayu (bukan furnitur)
+31,Kayu & furnitur,Furnitur
+17,Kertas & percetakan,Kertas
+18,Kertas & percetakan,Percetakan
+19,Kimia/migas/karet,Migas & batubara
+20,Kimia/migas/karet,Kimia
+21,Kimia/migas/karet,Farmasi
+22,Kimia/migas/karet,Karet & plastik
+23,Galian bukan logam,Galian bukan logam
+24,Logam dasar,Logam dasar
+25,Logam/mesin/alat angkut,Barang logam
+26,Logam/mesin/alat angkut,Komputer & elektronik
+27,Logam/mesin/alat angkut,Peralatan listrik
+28,Logam/mesin/alat angkut,Mesin n.e.c.
+29,Logam/mesin/alat angkut,Kendaraan bermotor
+30,Logam/mesin/alat angkut,Alat angkutan lain
+32,Pengolahan lainnya,Pengolahan lainnya
+33,Pengolahan lainnya,Reparasi mesin
