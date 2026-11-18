@@ -1,0 +1,16 @@
+cls_start,cls_end,n
+Chem/metal/mach,Micro 1-4,1550
+Chem/metal/mach,Small 10-19,30
+Chem/metal/mach,Small 5-9,90
+Food & bev,Micro 1-4,2893
+Food & bev,Small 10-19,70
+Food & bev,Small 5-9,111
+Other manuf,Micro 1-4,598
+Other manuf,Small 10-19,7
+Other manuf,Small 5-9,12
+Textiles,Micro 1-4,1933
+Textiles,Small 10-19,31
+Textiles,Small 5-9,81
+Wood & furniture,Micro 1-4,1702
+Wood & furniture,Small 10-19,25
+Wood & furniture,Small 5-9,82

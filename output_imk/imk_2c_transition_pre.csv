@@ -1,0 +1,7 @@
+cls_start,cls_end,n,share_pct
+T1 smaller-firm,T1 smaller-firm,7,87.5
+T1 smaller-firm,T2 mid-size,1,12.5
+T2 mid-size,T1 smaller-firm,2,25
+T2 mid-size,T2 mid-size,6,75
+T3 larger-firm,T2 mid-size,1,14.28571428571428
+T3 larger-firm,T3 larger-firm,6,85.71428571428571

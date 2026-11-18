@@ -1,0 +1,13 @@
+cls_start,cls_end,n
+Capital/footloose,Micro 1-4,831
+Capital/footloose,Small 10-19,18
+Capital/footloose,Small 5-9,46
+Electronics,Micro 1-4,10
+Electronics,Small 10-19,2
+Electronics,Small 5-9,1
+Labour-intensive,Micro 1-4,3133
+Labour-intensive,Small 10-19,53
+Labour-intensive,Small 5-9,152
+Resource-based,Micro 1-4,4702
+Resource-based,Small 10-19,90
+Resource-based,Small 5-9,177
