@@ -4,34 +4,35 @@ Parallel to the IBS pipeline, but **everything is at INDUSTRY level (2-digit KBL
 because IMK has no persistent firm id (firms cannot be followed across years).
 Size uses the **BPS worker definition**: Micro = 1–4, Small = 5–19 workers.
 
-## Run order — ONE command
+## Run order — TWO steps (engine, then analysis)
+The panel is built by the **engine** (repo `ibstest`); the analysis lives in this repo
+(`scarring-industry`).
 ```stata
-do "code/imk_MASTER.do"
+* 1) build the firm-level dataset ONCE, in ibstest:
+do "codes/prepare_imk_panel.do"        // -> ibstest/data/imk_firm.dta
+* 2) run the analysis, in scarring-industry:
+do "codes/imk/imk_MASTER.do"           // reads $data (= ibstest/data), writes output_imk/
 ```
-That's it. The master runs everything in order, each step guarded so a missing file
-or offline machine never crashes the run:
-  - **Section 0** converts the Excel VIMK{YY} files to `.dta` (skips any absent year),
-  - **Section 1** harmonizes all years -> `data/imk_firm.dta`,
-  - **2a-2e** run the analyses and write `output_imk/` (CSV + XLSX + PNG),
-  - the **Sankey** step renders natively in Stata (auto-installing its packages).
-All switches live at the top of `imk_MASTER.do`. Sections 0 and 1 are "run once":
-turn their triggers off to re-run only an analysis step (each is self-contained).
+`prepare_imk_panel.do` is self-contained: a CONFIG block at the top, then (0) optional
+Excel→`.dta` convert and (1) the COLUMN MAP harmonisation. `imk_MASTER.do` just runs the
+lenses (2a-2e, each self-contained), writes `output_imk/` (CSV + XLSX + PNG), and renders
+the Sankey natively in Stata (auto-installing its packages). All analysis switches live at
+the top of `imk_MASTER.do`.
 
 ## Files
 | File | Does |
 |---|---|
-| `convert_imk_dta.do` | Excel -> .dta; folds split 2024/2025 detail blocks into the firm row |
-| `imk_1_prepare.do` | harmonize all years -> `data/imk_firm.dta` (**column map lives here**) |
+| `prepare_imk_panel.do` *(engine, in ibstest)* | self-contained: (0) Excel→.dta incl. split 2024/2025 detail blocks; (1) harmonize all years -> `data/imk_firm.dta` (**column map lives here**) |
 | `imk_2a_growth.do` | output & employment growth, by period & industry |
 | `imk_2b_jobless_growth.do` | output vs employment index, labour productivity, ULC |
-| `imk_2c_size_mobility.do` | **(A)** Micro/Small composition over time (+ chart); **(B)** industry terciles T1/T2/T3 transition matrices (Sankey); **(C)** firm composition by **sector group** -> size band (Micro 1-4 / Small 5-9 / 10-19), snapshot 2019/2022/2025 (Sankey). Two sector schemes: `secgroupA` end-use (5), `secgroupB` factor-intensity (4), both built in `imk_1_prepare.do` and reusable in any chart |
+| `imk_2c_size_mobility.do` | **(A)** Micro/Small composition over time (+ chart); **(B)** industry terciles T1/T2/T3 transition matrices (Sankey); **(C)** firm composition by **sector group** -> size band (Micro 1-4 / Small 5-9 / 10-19), snapshot 2019/2022/2025 (Sankey). Two sector schemes: `secgroupA` end-use (5), `secgroupB` factor-intensity (4), both built in `prepare_imk_panel.do` and reusable in any chart |
 | `imk_2d_entry_exit.do` | establishment-count dynamics (net churn proxy) |
 | `imk_2e_decomposition.do` | within/between (shift-share) productivity decomposition |
 | `render_sankey.do` | **(shared IMK+IBS)** native Stata Sankey of any `*transition_*.csv`; auto-installs packages, Python fallback |
 | `sankey_mobility.py` | zero-install SVG Sankey — the offline fallback for `render_sankey.do` |
 
 ## PLUG-AND-PLAY: the one thing to edit for real data
-`imk_1_prepare.do` harmonizes 4 standard variables onto cryptic yearly columns:
+`prepare_imk_panel.do` harmonizes 4 standard variables onto cryptic yearly columns:
 `emp` (workers), `output` (revenue), `wage` (labour cost), `input` (materials+fuel).
 The mapping is a **single clearly-marked block** (`COLUMN MAP`, one line per year). If
 the real VIMK files use the same variable names (they should — the sample mirrors the

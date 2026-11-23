@@ -1,67 +1,117 @@
 * ==============================================================================
-* 1_prepare.do -- SECTION 1: build the firm-year panel (ONE file, all years)
+* prepare_ibs_panel.do -- STANDALONE engine: build the IBS firm-year panel
 * ------------------------------------------------------------------------------
-* WHAT THIS DOES
-*   Reads each yearly IBS microdata file and HARMONISES it: it lower-cases the
-*   names, strips the trailing year from every name (so Output10 / OUTPUT15 /
-*   Output22 all become "output"), then stacks all years into one tidy panel,
-*   data/firm_panel.dta. It KEEPS EVERY VARIABLE in the sample data -- not only
-*   the ones the scarring analysis needs -- so this repo can serve as a GENERAL
-*   engine for any study. A handful of analysis variables also get friendly,
-*   stable names on top: fid idscheme year isic2 isic5 output iinput va emp
-*   export labcost (plus w_prod, w_nonprod). IBS names are regular ("base name +
-*   2-digit year"), so one loop cleans every year 2010-2022.
+* WHAT THIS FILE IS
+*   ONE self-contained do-file that turns the raw IBS yearly files into a single
+*   tidy panel, data/firm_panel.dta, that ANY study can then use. It does not need
+*   a separate MASTER or SET_FILEPATHS: you set the folders in the CONFIG block
+*   right below, then run this one file. The panel is the reusable OUTPUT; each
+*   analysis project (e.g. scarring-industry) just reads data/firm_panel.dta.
 *
-*   Note on the harmoniser: it removes the LAST two digits of a name only when
-*   they equal that year (e.g. "...22"). A rare survey code that happens to end
-*   in the year digits may be trimmed too; such codes are auxiliary, and the key
-*   analysis columns are renamed explicitly below, so results are unaffected.
+* WHAT IT DOES, IN ORDER
+*   (0) convert_first == 1 : import each mfgYYYY.xlsx and save it as mfgYYYY.dta
+*                            (IBS arrives as Excel). A year with no .xlsx is skipped.
+*   (1) harmonise          : lower-case names, strip the trailing year from every
+*                            name (Output10 / OUTPUT15 / Output22 -> "output"),
+*                            lock a handful of analysis columns to stable names,
+*                            KEEP EVERY variable, then stack all years.
+*   (2) sanity check       : LOUD stop if a core column came out empty (a raw name
+*                            differs from what the rename list expects).
 *
-* DATA SOURCE
-*   This file cleans the yearly files in data/raw/mfgYYYY.dta. It is written for the
-*   REAL IBS microdata, whose firm id is genuine, so the link-based sections
-*   (2c/2d/2e) always run. There is NO automatic switch to any synthetic/test data:
-*   whatever you put in data/raw is exactly what gets analysed.
-*   (The sample files shipped with this repo are only a study case for building these
-*   do-files; their id is masked, so mobility / entry-exit on the sample are not
-*   meaningful -- but on the real data they are.)
+* HOW TO RUN
+*   1. Edit the CONFIG block below (at least $root) for THIS machine.
+*   2. Put the raw files in  data/raw/  as mfgYYYY.xlsx (or mfgYYYY.dta).
+*   3. Open Stata and run:  do "codes/prepare_ibs_panel.do"
 *
 * STATA WORDS USED BELOW (plain-English):
-*   local / global = a named value ( `name' = temporary ; $name = project-wide )
-*   foreach / forvalues = repeat a block once per item / number
+*   global = a project-wide named value, written $name
+*   local  = a temporary named value, written `name'
 *   capture = "try this; if it errors, carry on" (the error code lands in _rc)
-*   tempfile = a scratch dataset that is deleted when the run ends
-*   destring = turn text that holds numbers into real numbers
-*   append = stack another dataset underneath the one in memory
+*   forvalues / foreach = repeat a block once per number / item
 * ==============================================================================
 
+	capture log close        // close any log left open by a previous run
 	clear all                // start from an empty, clean memory
 	set more off             // no "-more-" pauses
 	set varabbrev off        // exact variable names only (so "drop output"
 	                         // cannot accidentally match "output10")
 
-* --- (0) Folders & defaults (only needed if this file is run on its own) --------
-*   If $root is empty, nobody set the paths yet, so fill in sensible defaults.
-	if "$root" == "" {
+* ===================================================================== *
+* >>>>>>>>>>>>>>>>>>>>>>>>>>>   CONFIG   <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< *
+* ===================================================================== *
+*   This is the ONLY block you edit when you move machines or change years.
+
+	*** (1) Project root = the ibstest folder on THIS computer.
 		global root "/Users/meizahra/Documents/work/National Economic Council (NEC)/ibstest"
-		global raw  "$root/data/raw"
-		global data "$root/data"
+
+	*** (2) Year range to read (2016 has no file; the loop skips missing years).
+		global year_start   2010
+		global year_end     2022
+
+	*** (3) Manufacturing only? 1 = keep ISIC 10-33 ; 0 = keep every sector.
+		global keep_mfg     1
+
+	*** (4) Convert Excel -> .dta first? IBS arrives as mfgYYYY.xlsx, so default 1.
+	***     Set 0 only if the raw files are already mfgYYYY.dta.
+		global convert_first 1
+
+* ===================================================================== *
+* -----------------   Folders (made if missing)   -------------------- *
+* ===================================================================== *
+*   Defined here so this file never depends on SET_FILEPATHS. The folders match
+*   the standard project layout; "capture mkdir" makes each one if it is missing
+*   ("capture" ignores the harmless "already exists" error).
+	global code "$root/codes"           // where the do-files live
+	global data "$root/data"            // where firm_panel.dta is saved
+	global raw  "$root/data/raw"        // where mfgYYYY.xlsx / .dta live
+	global fig  "$root/fig"             // figures (unused here; kept for a common layout)
+	global reg  "$root/reg"             // tables  (unused here; kept for a common layout)
+	capture mkdir "$data"
+	capture mkdir "$raw"
+	capture mkdir "$fig"
+	capture mkdir "$reg"
+
+*   Open a run log -- a SAVED .log file (not a folder). One file per run: the name
+*   carries the date and time so runs do not overwrite each other.
+	local _d = subinstr("`c(current_date)'", " ", "_", .)   // e.g. 23_Nov_2026
+	local _t = subinstr("`c(current_time)'", ":", "",  .)    // e.g. 143205
+	log using "$root/prepare_ibs_panel_`_d'_`_t'.log", replace text
+
+* ===================================================================== *
+* -----------   (0) Convert Excel -> .dta (if asked)   --------------- *
+* ===================================================================== *
+*   import each mfgYYYY.xlsx and save it as the mfgYYYY.dta that Section 1 reads.
+*   A year with no .xlsx is simply skipped, so .dta-only years are left untouched.
+	if $convert_first == 1 {
+		display as text "== IBS 0: convert Excel -> .dta (only where an .xlsx exists) =="
+		forvalues yr = $year_start/$year_end {
+			capture confirm file "$raw/mfg`yr'.xlsx"
+			if _rc {
+				display as text "   (skip `yr': no mfg`yr'.xlsx)"
+				continue                 // jump to the next year
+			}
+			display "   converting mfg`yr'.xlsx -> mfg`yr'.dta ..."
+			* firstrow = the first spreadsheet row holds the column names.
+			import excel "$raw/mfg`yr'.xlsx", firstrow clear
+			save "$raw/mfg`yr'.dta", replace
+		}
+		display as result "== IBS convert done: .dta files are in $raw =="
 	}
 
-	* year range to read (normally set by MASTER.do; sensible defaults if run alone)
-	if "$year_start" == "" global year_start 2010
-	if "$year_end"   == "" global year_end   2022
-
-* ==============================================================================
-* Clean each year in data/raw and append them into one firm-year panel
-* ==============================================================================
+* ===================================================================== *
+* -----------   (1) Harmonise each year and append   ---------------- *
+* ===================================================================== *
+*   Reads each mfgYYYY.dta, harmonises the names, and stacks all years into one
+*   panel. It KEEPS EVERY VARIABLE (general engine), and also gives a few analysis
+*   columns friendly, stable names: fid idscheme year isic2 isic5 output iinput
+*   va emp export labcost (plus w_prod, w_nonprod).
 
 	* start an empty scratch dataset that we will grow year by year
 	tempfile panel
 	clear
 	save `panel', emptyok replace          // emptyok = allowed to save with no data yet
 
-	* loop over every year in the chosen range (forvalues = count through numbers)
+	* loop over every year in the chosen range
 	forvalues yr = $year_start/$year_end {
 
 		* skip years with no raw file (e.g. 2016). "confirm file" errors if missing.
@@ -70,7 +120,7 @@
 
 		display "Cleaning year `yr' ..."
 		use "$raw/mfg`yr'.dta", clear
-		local yy = substr("`=`yr''", 3, 2)   // last 2 digits of the year: 2010 -> "10", 2006 -> "06"
+		local yy = substr("`=`yr''", 3, 2)   // last 2 digits of the year: 2010 -> "10"
 
 		* (a) make every variable name lower-case, so names match across years
 		foreach v of varlist * {
@@ -89,8 +139,8 @@
 		* (b) LOCK the analysis columns FIRST, by their known raw names. We take the
 		*     year-suffixed name when it exists (e.g. ekspor`yy'), otherwise the plain
 		*     name (2015 stores some without a suffix). Doing this BEFORE the general
-		*     harmoniser matters: if a year happens to carry BOTH ekspor`yy' and a
-		*     stray plain "ekspor", we still pick the right (suffixed) one here.
+		*     harmoniser matters: if a year carries BOTH ekspor`yy' and a stray plain
+		*     "ekspor", we still pick the right (suffixed) one here.
 		*     (b1) firm id + which id scheme the year uses (Kipb / KIP 2015 / Psid 2017)
 		local scheme ""
 		foreach cand in kipb kip psid {
@@ -174,13 +224,11 @@
 			if _rc gen double `x' = .
 		}
 
-		* (i) restrict to manufacturing (ISIC 10-33). This repo is a general engine,
-		*     so run  "global keep_mfg 0"  beforehand to keep EVERY sector instead.
-		if "$keep_mfg" == "" global keep_mfg 1       // default: manufacturing only
+		* (i) restrict to manufacturing (ISIC 10-33) unless keep_mfg == 0.
 		if $keep_mfg == 1 keep if isic2 >= 10 & isic2 <= 33
 
 		* (j) put the key columns first; EVERY other raw column is kept after them,
-		*     so any study can use any variable that exists in the sample data.
+		*     so any study can use any variable that exists in the data.
 		order fid idscheme year isic2 isic5 output iinput va emp export labcost w_prod w_nonprod
 
 		* (k) stack this year's rows underneath the years done so far. "force" lets
@@ -220,21 +268,20 @@
 	compress                                 // use the smallest storage type per variable
 	save "$data/firm_panel.dta", replace
 
-	* also save an Excel copy of the processed dataset (into output/ if we have it)
-	if "$output" != "" local xdir "$output"
-	else               local xdir "$data"
-	export excel using "`xdir'/firm_panel.xlsx", replace firstrow(variables)
+	* also save an Excel copy of the processed dataset (next to the panel)
+	export excel using "$data/firm_panel.xlsx", replace firstrow(variables)
 
-	display as result "== saved: $data/firm_panel.dta  +  `xdir'/firm_panel.xlsx =="
+	display as result "== saved: $data/firm_panel.dta  +  $data/firm_panel.xlsx =="
 	tab year                                 // quick count of rows per year
 
-* --- (SANITY CHECK) shout if a source variable NAME did not match --------------
+* ===================================================================== *
+* -----------   (2) SANITY CHECK: shout on a name mismatch   --------- *
+* ===================================================================== *
 *   Every rename above used "capture", so a column whose raw name differs on the
-*   REAL data is NOT an error -- it is just left empty (all missing). On the sample
-*   all names match, but a new vintage of the real data might name a column
-*   differently. This block re-reads the panel and prints a LOUD warning naming any
-*   core column that came out empty, so a name mismatch is caught at once instead of
-*   silently producing blank results. It changes nothing when every name matches.
+*   REAL data is NOT an error -- it is just left empty (all missing). This block
+*   re-reads the panel and prints a LOUD warning naming any core column that came
+*   out empty, so a name mismatch is caught at once instead of silently producing
+*   blank results. It changes nothing when every name matches.
 	use "$data/firm_panel.dta", clear
 	display as text "{hline 72}"
 	display as text "SANITY CHECK (variable names) -- read this before trusting any result"
@@ -254,8 +301,6 @@
 	}
 	else {
 		* (2) core columns that SHOULD have values in EVERY manufacturing year.
-		*     For each year, if a core column is entirely missing, its raw name likely
-		*     differs in that year's file -> warn and name the column + year.
 		*     (labcost / wages are NOT here: they are known to be absent after 2018.)
 		local core "output va emp isic5"
 		levelsof year, local(yrs)
@@ -280,13 +325,15 @@
 	if `problems' == 0 {
 		display as result "SANITY CHECK ok: id + all core variables present for every year."
 		display as text "{hline 72}"
+		capture log close
 	}
 	else {
 		display as error "{hline 72}"
 		display as error "STOP: SANITY CHECK found `problems' problem(s) listed above."
-		display as error "A source variable NAME probably differs from the sample data."
-		display as error "Fix the rename list in step (b) of 1_prepare.do, then run again."
-		display as error "(The run is halted here ON PURPOSE so no lens analyses blank data.)"
+		display as error "A source variable NAME probably differs from the real data."
+		display as error "Fix the rename list in step (b) above, then run again."
+		display as error "(The run is halted here ON PURPOSE so no study analyses blank data.)"
 		display as error "{hline 72}"
-		exit 459          // non-zero code = error -> also stops MASTER.do if it called us
+		capture log close
+		exit 459          // non-zero code = error -> stops any caller too
 	}

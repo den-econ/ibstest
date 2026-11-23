@@ -1,83 +1,63 @@
-# Do-file: Replikasi kerangka 6-lensa AHN (2010)
+# ibstest — engine pembangun panel BPS (IBS & IMK)
 
-Pipeline Stata untuk mereplikasi kerangka penelusuran *firm-level* Aswicahyono,
-Hill & Narjoko (2010) — analisis "scarring" manufaktur — memakai mikrodata IBS
-2010–2022. Metodologi lengkap ada di [`ref/Lala.pdf`](../ref/Lala.pdf).
+`ibstest` adalah **engine umum**: ia mengubah mikrodata mentah BPS menjadi dua
+**panel siap pakai** yang bisa dipakai studi apa pun (bukan hanya *scarring*):
 
-Pipeline dirancang **plug-and-play**: kembangkan/uji di data sampel, lalu jalankan
-apa adanya di komputer berisi data asli.
+| Panel | Dibangun oleh | Isi |
+|-------|---------------|-----|
+| `data/firm_panel.dta` | `prepare_ibs_panel.do` | IBS — satu baris = perusahaan × tahun |
+| `data/imk_firm.dta`   | `prepare_imk_panel.do` | IMK — satu baris = perusahaan (level industri) |
+
+Analisis (lensa 2a–2e dsb.) **tidak** di sini — itu ada di repo tetangga
+`scarring-industry/`, yang tinggal membaca kedua panel di atas lewat `$data`.
 
 ---
 
-## Cara pakai (3 langkah)
+## Cara pakai (satu file, berdiri sendiri)
 
-1. Taruh mikrodata mentah di `data/raw/` (file `mfgYYYY.dta`).
-2. Buka Stata **di folder repo ini** (atau `cd` ke sana).
-3. Jalankan:
+Tiap engine adalah **satu do-file mandiri**: tak perlu MASTER atau SET_FILEPATHS.
+Semua setelan ada di **blok CONFIG** di bagian atas file.
+
+1. Buka file prepare yang dituju, edit blok **CONFIG** (minimal `$root` =
+   lokasi folder `ibstest` di komputer ini; rentang tahun; toggle convert).
+2. Taruh data mentah:
+   - **IBS** → `data/raw/mfgYYYY.xlsx` (`convert_first = 1`: di-*import* dari Excel,
+     di-*save* jadi `.dta`, baru diolah). Boleh juga langsung `mfgYYYY.dta`.
+   - **IMK** → `data/raw_imk/VIMK{YY}.dta` (`convert_first = 0`: baca `.dta` langsung).
+     Kalau yang ada baru Excel `VIMK{YY}-Tahunan.xlsx`, set `convert_first = 1`.
+3. Jalankan salah satu:
    ```stata
-   do "code/MASTER.do"
+   do "codes/prepare_ibs_panel.do"     // -> data/firm_panel.dta
+   do "codes/prepare_imk_panel.do"     // -> data/imk_firm.dta
    ```
 
-Tidak perlu mengedit path per-komputer. Bila di komputer lain tidak bisa membuka
-Stata di folder repo, isi `$root` secara manual di
-[`SET_FILEPATHS.do`](SET_FILEPATHS.do).
-
-**Tanpa paket tambahan** — hanya perintah Stata bawaan (butuh Stata 16+).
+Folder (`data`, `raw`, `raw_imk`, `fig`, `reg`) dibuat otomatis bila belum ada
+(`capture mkdir`). Tiap run menulis satu **file log** (`prepare_*_panel_<tgl>_<jam>.log`)
+di folder `ibstest`. **Tanpa paket tambahan** — hanya perintah Stata bawaan.
 
 ---
 
-## Struktur
+## Isi `codes/`
 
-Satu **master** mengontrol seluruh **sub-file** lewat sakelar nyala/mati.
-
-**Section 1** = paneling · **Section 2** = cleaning & analysis.
-
-| File | Fungsi | Output |
-|------|--------|--------|
-| [`MASTER.do`](MASTER.do) | Kontrol pusat: setelan + trigger tiap sub-file | — |
-| [`SET_FILEPATHS.do`](SET_FILEPATHS.do) | Tetapkan semua path dari folder kerja Stata | — |
-| [`1_prepare.do`](1_prepare.do) | Bersihkan semua tahun (loop) + append → panel firm-year baku | `data/firm_panel.dta` |
-| [`2a_growth.do`](2a_growth.do) | Pertumbuhan output & nilai tambah | `output/2a_*.csv` |
-| [`2b_jobless_growth.do`](2b_jobless_growth.do) | Produktivitas TK & *jobless growth* | `output/2b_*.csv`, `output/2b_jobless_growth.png` |
-| [`2c_size_mobility.do`](2c_size_mobility.do) | Matriks transisi kelas ukuran | `output/2c_transition_*.csv` |
-| [`2d_entry_exit.do`](2d_entry_exit.do) | Entry/exit rate | `output/2d_entry_exit.csv`, `output/2d_entry_exit.png` |
-| [`2e_decomposition.do`](2e_decomposition.do) | Dekomposisi ekspansi/kontraksi TK | `output/2e_decomp.csv` |
-
-Semua hasil → folder [`output/`](../output/): tiap tabel disimpan **`.csv` + `.xlsx`**,
-gambar `.png`, plus **`firm_panel.xlsx`** (salinan Excel dataset olahan).
-
-Tiap sub-file **berdiri sendiri** (membaca `data/firm_panel.dta` dari disk), jadi
-bisa dijalankan ulang terpisah.
+| File | Fungsi |
+|------|--------|
+| `prepare_ibs_panel.do` | **Engine IBS**: (0) convert Excel→dta, (1) harmonisasi semua tahun + append + *sanity check* → `data/firm_panel.dta` |
+| `prepare_imk_panel.do` | **Engine IMK**: (0) convert Excel→dta (opsional), (1) **COLUMN MAP** per tahun + harmonisasi → `data/imk_firm.dta` |
+| `gen_ibs_psid.do`, `gen_imk_panel.do` | Pembuat **data sampel sintetis** (hanya untuk menyusun do-file; tak dipakai pada data asli) |
+| `concordance_kbli_isic2.do` | Tabel konkordansi KBLI ↔ ISIC 2-digit |
+| `imk_prepare.do` | *(legacy)* penggabung per-tahun versi lama — tidak dipakai pipeline sekarang |
 
 ---
 
-## Setelan di `MASTER.do`
+## `prepare_ibs_panel.do` — harmonisasi IBS
 
-Semua yang perlu diubah ada di bagian atas `MASTER.do`.
+IBS menamai variabel secara teratur ("nama dasar + 2-digit tahun"), jadi satu loop
+membersihkan tiap tahun: huruf kecilkan nama → kunci kolom analisis ke nama baku →
+**buang akhiran tahun** dari SEMUA nama lain (`Output10`/`OUTPUT15`/`Output22` → `output`)
+→ `destring` → `append`. **SEMUA variabel disimpan** (engine umum), dengan beberapa
+kolom analisis diberi nama baku di depan.
 
-**Sumber data** (`$source`):
-
-| Nilai | Arti |
-|-------|------|
-| `"auto"` *(default)* | Coba `raw`; bila id firm ter-mask (spt data sampel) → otomatis pakai panel sintetis. |
-| `"raw"` | Paksa dari `data/raw/mfgYYYY.dta`. **← dipakai di data ASLI.** |
-| `"panel"` | Paksa dari `data/ibs_panel_2010_2022.csv` (uji). |
-
-**Setelan lain:** rentang tahun, tahun krisis (`$crisis_year`, default 2020 =
-COVID), tahun basis indeks, ambang kelas ukuran, dan pasangan tahun untuk matriks
-transisi.
-
-**Trigger:** set `1` (jalankan) atau `0` (lewati) untuk tiap langkah.
-
-### Alur hemat waktu (komputer terbatas)
-1. Jalankan sekali dengan `s1_prepare = 1` → panel tersimpan ke `data/firm_panel.dta`.
-2. Set `s1_prepare = 0`, lalu nyalakan hanya lensa yang ingin dijalankan ulang.
-
----
-
-## Panel hasil olahan — `data/firm_panel.dta`
-
-Satu baris = perusahaan × tahun. Nilai **nominal** (ribu Rp).
+Panel hasil (`data/firm_panel.dta`) — nilai **nominal**:
 
 | Variabel | Keterangan |
 |----------|-----------|
@@ -90,28 +70,36 @@ Satu baris = perusahaan × tahun. Nilai **nominal** (ribu Rp).
 | `export` | Nilai ekspor |
 | `labcost` | Biaya tenaga kerja (olahan; bila tersedia) |
 | `w_prod` `w_nonprod` | Upah **mentah** pekerja produksi & non-produksi (input `labcost`, 2010–2018) |
+| *(…)* | semua kolom mentah lain ikut tersimpan setelah kolom kunci |
 
-Disimpan sebagai **`.dta`** (di `data/firm_panel.dta`) **+ `.xlsx`** (di `output/firm_panel.xlsx`).
+Di akhir ada **SANITY CHECK** yang keras: bila sebuah kolom inti (`output va emp isic5`)
+atau `fid` keluar kosong untuk suatu tahun (artinya nama variabel mentah berbeda dari
+yang diharapkan), run **dihentikan** (`exit 459`) dengan pesan jelas — supaya run manual
+tak sampai menganalisis data kosong. Untuk data asli dengan nama kolom berbeda, edit
+daftar rename di langkah **(b)**.
+
+> Deflasi (nominal → riil): sisipkan di penanda `[DEFLATOR]` dalam `prepare_ibs_panel.do`.
 
 ---
 
-## Catatan penting
+## `prepare_imk_panel.do` — harmonisasi IMK
 
-- **ID firm ter-mask di data sampel.** Di `data/raw/` sampel, id perusahaan
-  disamarkan (`"***"`), sehingga penelusuran firm-level (Lensa 4/5/6) tidak bisa
-  dari raw. Mode `auto` otomatis beralih ke panel sintetis yang id-nya valid. **Di
-  data asli id tidak ter-mask**, jadi `auto` langsung memakai jalur `raw`.
+IMK mengganti nama kolomnya **tiap tahun**, jadi inti file ini adalah **COLUMN MAP**:
+satu blok jelas, satu baris per tahun, memetakan kolom mentah ke empat variabel baku
+`emp` (pekerja), `output` (pendapatan), `wage` (balas jasa), `input` (bahan+bahan bakar),
+plus `kbli2/kbli5`, kelas ukuran (Mikro/Kecil), dan dua pengelompokan sektor
+(`secgroupA` 5 kelompok end-use, `secgroupB` 4 kelompok intensitas faktor).
 
-- **Validitas linkage.** Entry/exit & dekomposisi hanya menautkan tahun
-  **berurutan dengan skema id sama**; pasangan yang melewati pergantian skema BPS
-  atau tahun bolong otomatis dilewati.
+**Plug-and-play:** satu-satunya yang diedit untuk data asli adalah blok CONFIG +
+COLUMN MAP. Kode *existence-guarded*: kolom yang hilang → peringatan, bukan error.
 
-- **Panel sintetis bersifat *balanced*** (firm sama tiap tahun), sehingga di
-  sampel entry/exit = 0 — itu sifat data contoh, bukan bug. Pada data asli yang
-  tidak balanced, Lensa 5 & 6 akan informatif.
+---
 
-- **Nominal vs riil.** Nilai masih nominal. Untuk versi riil, sisipkan deflasi per
-  sektor pada penanda `[DEFLATOR]` di `1_prepare.do`.
+## Catatan data sampel
+
+Data sampel di repo ini **sintetis** (study case untuk menyusun do-file), bukan
+mikrodata asli. Sampel IBS `mfgYYYY.dta` ada di `data/panel_ibs_sintesis/`, dan sampel
+IMK `VIMK{YY}.dta` ada di `data/raw_imk/`. Lihat `KONTEKS_data_sintesis.md`.
 
 ---
 
@@ -119,3 +107,4 @@ Disimpan sebagai **`.dta`** (di `data/firm_panel.dta`) **+ `.xlsx`** (di `output
 
 Aswicahyono, H., Hill, H., & Narjoko, D. (2010). *Industrialisation after a Deep
 Economic Crisis: Indonesia.* The Journal of Development Studies, 46(6), 1084–1108.
+Metodologi lengkap: [`ref/Lala.pdf`](../ref/Lala.pdf).
