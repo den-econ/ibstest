@@ -49,7 +49,7 @@
 		global year_end     2022
 
 	*** (3) Manufacturing only? 1 = keep ISIC 10-33 ; 0 = keep every sector.
-		global keep_mfg     1
+		global keep_mfg     0
 
 	*** (4) Convert Excel -> .dta first? IBS arrives as mfgYYYY.xlsx, so default 1.
 	***     Set 0 only if the raw files are already mfgYYYY.dta. (On the sample,
