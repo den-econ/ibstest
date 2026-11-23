@@ -52,8 +52,15 @@
 		global keep_mfg     1
 
 	*** (4) Convert Excel -> .dta first? IBS arrives as mfgYYYY.xlsx, so default 1.
-	***     Set 0 only if the raw files are already mfgYYYY.dta.
+	***     Set 0 only if the raw files are already mfgYYYY.dta. (On the sample,
+	***     which is .dta only, this step simply finds no .xlsx and skips -- harmless.)
 		global convert_first 1
+
+	*** (5) WHERE the raw yearly files live -- this is the "directory" you change.
+	***     DEFAULT = REAL data: put the real mfgYYYY.xlsx (or .dta) in data/raw.
+	***     (To TEST on the provided sample -- same format -- point this at
+	***      "$root/data/raw_ibs_sampel" instead.)
+		global raw "$root/data/raw"
 
 * ===================================================================== *
 * -----------------   Folders (made if missing)   -------------------- *
@@ -63,11 +70,10 @@
 *   ("capture" ignores the harmless "already exists" error).
 	global code "$root/codes"           // where the do-files live
 	global data "$root/data"            // where firm_panel.dta is saved
-	global raw  "$root/data/raw"        // where mfgYYYY.xlsx / .dta live
 	global fig  "$root/fig"             // figures (unused here; kept for a common layout)
 	global reg  "$root/reg"             // tables  (unused here; kept for a common layout)
 	capture mkdir "$data"
-	capture mkdir "$raw"
+	capture mkdir "$raw"                // $raw was chosen in CONFIG item (5) above
 	capture mkdir "$fig"
 	capture mkdir "$reg"
 

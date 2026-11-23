@@ -59,7 +59,7 @@
 *   makes each folder if it is missing ("capture" ignores "already exists").
 	global code    "$root/codes"           // where the do-files live
 	global data    "$root/data"            // where imk_firm.dta is saved
-	global raw_imk "$root/data/raw_imk"    // where VIMK{YY}.dta / .xlsx live
+	global raw_imk "$root/data/raw_imk"    // raw VIMK files: holds the SAMPLE now; drop the REAL VIMK{YY}.dta here for real data
 	global fig     "$root/fig"             // figures (unused here; kept for a common layout)
 	global reg     "$root/reg"             // tables  (unused here; kept for a common layout)
 	capture mkdir "$data"

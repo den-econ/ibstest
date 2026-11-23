@@ -43,9 +43,9 @@ di folder `ibstest`. **Tanpa paket tambahan** — hanya perintah Stata bawaan.
 |------|--------|
 | `prepare_ibs_panel.do` | **Engine IBS**: (0) convert Excel→dta, (1) harmonisasi semua tahun + append + *sanity check* → `data/firm_panel.dta` |
 | `prepare_imk_panel.do` | **Engine IMK**: (0) convert Excel→dta (opsional), (1) **COLUMN MAP** per tahun + harmonisasi → `data/imk_firm.dta` |
-| `gen_ibs_psid.do`, `gen_imk_panel.do` | Pembuat **data sampel sintetis** (hanya untuk menyusun do-file; tak dipakai pada data asli) |
-| `concordance_kbli_isic2.do` | Tabel konkordansi KBLI ↔ ISIC 2-digit |
-| `imk_prepare.do` | *(legacy)* penggabung per-tahun versi lama — tidak dipakai pipeline sekarang |
+
+Folder ini **hanya** berisi dua engine merging data asli di atas. (Skrip pembuat sampel
+sintetis terdahulu sudah dikeluarkan; lihat `KONTEKS_data_sintesis.md`.)
 
 ---
 
@@ -97,9 +97,11 @@ COLUMN MAP. Kode *existence-guarded*: kolom yang hilang → peringatan, bukan er
 
 ## Catatan data sampel
 
-Data sampel di repo ini **sintetis** (study case untuk menyusun do-file), bukan
-mikrodata asli. Sampel IBS `mfgYYYY.dta` ada di `data/panel_ibs_sintesis/`, dan sampel
-IMK `VIMK{YY}.dta` ada di `data/raw_imk/`. Lihat `KONTEKS_data_sintesis.md`.
+Data asli BPS tak boleh keluar dari komputer terestriksi, jadi do-file ini disusun di
+**sampel seformat**: IBS di `data/raw_ibs_sampel/`, IMK di `data/raw_imk/`. Merging-nya
+tak pernah membuat/mengarang data — hanya menggabungkan apa adanya, lalu SANITY CHECK
+berhenti keras bila nama kolom data asli berbeda. Detail & caveat sampel:
+[`KONTEKS_data_sintesis.md`](KONTEKS_data_sintesis.md).
 
 ---
 
