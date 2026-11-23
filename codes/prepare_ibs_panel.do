@@ -62,6 +62,11 @@
 	***      "$root/data/raw_ibs_sampel" instead.)
 		global raw "$root/data/raw"
 
+	*** (6) Add REAL (deflated, constant-2010-price) values from the WPI? 1=yes, 0=no.
+	***     Builds *_real_umum (general yearly WPI) and *_real_sekt (sector WPI).
+		global add_real 1
+		global wpi_file "$root/data/wpi_extended_1990t2022.dta"   // price index, 2010=100
+
 * ===================================================================== *
 * -----------------   Folders (made if missing)   -------------------- *
 * ===================================================================== *
@@ -247,22 +252,83 @@
 		save `panel', replace
 	}
 
-	* bring the full stacked panel into memory and save it
+	* bring the full stacked panel into memory
 	use `panel', clear
-	save "$out/firm_panel.dta", replace
 
-* --- [DEFLATOR] (optional, turned off) -----------------------------------------
-*   If you have a sector-year price index (data/deflator.dta: isic2 year defl),
-*   you could divide the nominal values by it here to get real values:
-*     use "$out/firm_panel.dta", clear
-*     merge m:1 isic2 year using "$data/deflator.dta", keep(1 3) nogen
-*     replace output = output/defl
-*     replace va     = va/defl
-*     save "$out/firm_panel.dta", replace
+* --- [DEFLATOR] add REAL values from the WPI (optional; CONFIG toggle add_real) -
+*   Adds real (constant-2010-price) columns ALONGSIDE the nominal ones. Two deflators:
+*     _real_umum = nominal / (wpi  /100)   general manufacturing WPI (one index per year)
+*     _real_sekt = nominal / (wpist/100)   sector WPI (ISIC Rev.3 2-digit)
+*   The WPI is coded in ISIC Rev.3 (mfg 15-37); our panel is ISIC Rev.4 (10-33), so we
+*   map isic2 (Rev.4) -> a Rev.3 2-digit sector below. That bridge is APPROXIMATE
+*   (26 computers/electronics and 33 repair are the roughest). emp is a count -> NOT deflated.
+	if $add_real == 1 {
+		capture confirm file "$wpi_file"
+		if _rc {
+			display as error "!! WPI file not found: $wpi_file -> skipping real values."
+		}
+		else {
+			* (1) general WPI: one index per year (constant across codes, so mean is exact)
+			preserve
+				use "$wpi_file", clear
+				collapse (mean) wpi, by(year)
+				tempfile _wgen
+				save `_wgen'
+			restore
+			merge m:1 year using `_wgen', keep(master match) nogen
+
+			* (2) sector WPI collapsed to ISIC Rev.3 2-digit (mean of its 4-digit codes)
+			preserve
+				use "$wpi_file", clear
+				gen int isic2_r3 = real(substr(kblir34, 1, 2))   // 2-digit of the Rev.3 code
+				collapse (mean) wpist, by(year isic2_r3)
+				tempfile _wsec
+				save `_wsec'
+			restore
+			* map our isic2 (ISIC Rev.4, 10-33) -> the matching ISIC Rev.3 2-digit (15-37)
+			gen int isic2_r3 = .
+			replace isic2_r3 = 15 if inlist(isic2, 10, 11)   // food & beverages
+			replace isic2_r3 = 16 if isic2 == 12             // tobacco
+			replace isic2_r3 = 17 if isic2 == 13             // textiles
+			replace isic2_r3 = 18 if isic2 == 14             // wearing apparel
+			replace isic2_r3 = 19 if isic2 == 15             // leather & footwear
+			replace isic2_r3 = 20 if isic2 == 16             // wood
+			replace isic2_r3 = 21 if isic2 == 17             // paper
+			replace isic2_r3 = 22 if isic2 == 18             // printing
+			replace isic2_r3 = 23 if isic2 == 19             // coke & refined petroleum
+			replace isic2_r3 = 24 if inlist(isic2, 20, 21)   // chemicals & pharmaceuticals
+			replace isic2_r3 = 25 if isic2 == 22             // rubber & plastics
+			replace isic2_r3 = 26 if isic2 == 23             // other non-metallic mineral
+			replace isic2_r3 = 27 if isic2 == 24             // basic metals
+			replace isic2_r3 = 28 if isic2 == 25             // fabricated metal products
+			replace isic2_r3 = 32 if isic2 == 26             // computer/electronic/optical (approx)
+			replace isic2_r3 = 31 if isic2 == 27             // electrical equipment
+			replace isic2_r3 = 29 if isic2 == 28             // machinery & equipment n.e.c.
+			replace isic2_r3 = 34 if isic2 == 29             // motor vehicles
+			replace isic2_r3 = 35 if isic2 == 30             // other transport equipment
+			replace isic2_r3 = 36 if inlist(isic2, 31, 32)   // furniture & other manufacturing
+			replace isic2_r3 = 29 if isic2 == 33             // repair/installation (approx -> machinery)
+			merge m:1 year isic2_r3 using `_wsec', keep(master match) nogen
+
+			* (3) real values in 2010 prices = nominal / (index/100). Nominal is kept as-is.
+			foreach v in output va iinput labcost export {
+				capture confirm variable `v'
+				if !_rc {
+					gen double `v'_real_umum = `v' / (wpi   / 100)   // general-WPI real
+					gen double `v'_real_sekt = `v' / (wpist / 100)   // sector-WPI real
+					label var `v'_real_umum "`v' (real, 2010 prices, general WPI)"
+					label var `v'_real_sekt "`v' (real, 2010 prices, sector WPI)"
+				}
+			}
+			label var wpi   "General manufacturing WPI (2010=100)"
+			label var wpist "Sector WPI (2010=100, ISIC Rev.3 2-digit, mapped)"
+			drop isic2_r3
+			display as result "   [DEFLATOR] added *_real_umum and *_real_sekt (2010 prices)."
+		}
+	}
 
 * --- Labels & final save -------------------------------------------------------
-*   Attach human-readable labels, shrink the file (compress), and save.
-	use "$out/firm_panel.dta", clear
+*   Attach human-readable labels, shrink the file (compress), and save ONCE.
 	label var fid      "Firm identifier"
 	label var idscheme "Id scheme (link validity)"
 	label var year     "Year"
