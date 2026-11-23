@@ -36,7 +36,7 @@ turn their triggers off to re-run only an analysis step (each is self-contained)
 The mapping is a **single clearly-marked block** (`COLUMN MAP`, one line per year). If
 the real VIMK files use the same variable names (they should — the sample mirrors the
 real layout), **nothing needs changing**: drop the real `VIMK{YY}.dta` in
-`data/raw_imk_sampel/` and run. If BPS renamed a column, edit only that year's line.
+`data/raw_imk/` and run. If BPS renamed a column, edit only that year's line.
 The code is existence-guarded: a missing column prints a warning and continues.
 
 ## Data caveats (verified on the sample)

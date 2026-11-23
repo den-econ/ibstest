@@ -11,7 +11,7 @@
 *   The KBLI column has a different name every year, so those names are listed by
 *   hand below.
 *
-* INPUT  : data/raw_imk_sampel/VIMK{YY}-Tahunan.xlsx  (one per year)
+* INPUT  : data/raw_imk/VIMK{YY}-Tahunan.xlsx  (one per year)
 *          data/ibs/indus{75,85,95,05}.dta            (old SI surveys)
 * OUTPUT : data/panel_imk_sintesis/imk20{YY}.dta       (one per year)
 *          data/panel_imk_sintesis/imk_panel_2017_2025.dta   (all IMK years)
@@ -29,7 +29,7 @@
 		global root "/Users/meizahra/Documents/work/National Economic Council (NEC)/ibstest"
 	}
 	if "$root" == "" global root "`c(pwd)'"
-	global imk "$root/data/raw_imk_sampel"
+	global imk "$root/data/raw_imk"
 	global out "$root/data/panel_imk_sintesis"
 	// "capture mkdir" makes the output folder (ignored if it already exists).
 	capture mkdir "$out"

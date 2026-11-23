@@ -47,7 +47,7 @@
 
 * --- (4) IMK (Industri Mikro & Kecil) folders ----------------------------------
 *   Used by imk_MASTER.do and the imk_*.do files. Kept separate from IBS.
-	global raw_imk    "$root/data/raw_imk_sampel"   // VIMK{YY}.dta (one row per firm)
+	global raw_imk    "$root/data/raw_imk"   // VIMK{YY}.dta (one row per firm)
 	global output_imk "$scar_root/output_imk"       // IMK results -> scarring-industry/ (apart from IBS)
 	global reg_imk    "$output_imk"
 	global fig_imk    "$output_imk"

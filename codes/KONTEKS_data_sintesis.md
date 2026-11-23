@@ -23,7 +23,7 @@ Mengembangkan & menguji pipeline analisis di **data contoh**, lalu menjalankanny
 |--------|-----|--------|
 | `data/ibs/` | `indus75/85/95/05/15` (SI historis), `rawin*`, `proin*`, metadata | **ASLI** |
 | `data/raw_ibs_sampel/` | `mfg2010…2022.dta` | sampel mentah IBS (id ter-mask) |
-| `data/raw_imk_sampel/` | `VIMK17…25-Tahunan.xlsx` | sampel mentah IMK |
+| `data/raw_imk/` | `VIMK17…25-Tahunan.xlsx` | sampel mentah IMK |
 
 ---
 

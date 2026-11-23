@@ -76,6 +76,9 @@
 *   On/off switches: 1 = run this step, 0 = skip it. (These are "locals":
 *   temporary names, written `name', that live only while this file runs.)
 
+	*** Section 0 - convert Excel -> .dta (only if raw is .xlsx; skips years with none)
+		local s0_convert            1   // mfgYYYY.xlsx -> mfgYYYY.dta (safe to leave on)
+
 	*** Section 1 - build the panel (run once, then may be turned off)
 		local s1_prepare            1   // clean all years + append -> data/firm_panel.dta
 
@@ -100,6 +103,11 @@
 	timer clear 1                    // reset stopwatch #1
 	timer on 1                       // start timing the whole run
 
+	* Section 0: convert any Excel to .dta first. A year with no .xlsx is skipped,
+	* so existing .dta files (e.g. the sample) are used as-is.
+	if `s0_convert' == 1 {
+		do "$code/ibs/convert_ibs_dta.do"
+	}
 	* run each step only if its trigger above is 1
 	if `s1_prepare' == 1 {
 		do "$code/ibs/1_prepare.do"

@@ -17,8 +17,8 @@
 *     firm we first add those item rows up to the firm level (a total value and a
 *     count of items) and then attach them to the main table, matched on pmid.
 *
-* INPUT  : data/raw_imk_sampel/VIMK*-Tahunan*.xlsx
-* OUTPUT : data/raw_imk_sampel/VIMK17.dta ... VIMK25.dta
+* INPUT  : data/raw_imk/VIMK*-Tahunan*.xlsx
+* OUTPUT : data/raw_imk/VIMK17.dta ... VIMK25.dta
 * HOW TO RUN: usually called automatically by imk_MASTER.do (Section 0); can also
 *             be run on its own with  do "code/convert_imk_dta.do".
 * ==============================================================================
@@ -37,7 +37,7 @@
 		global root "/Users/meizahra/Documents/work/National Economic Council (NEC)/ibstest"
 	}
 	if "$root" == "" global root "`c(pwd)'"     // $root still empty -> use cwd
-	global imk "$root/data/raw_imk_sampel"      // where the VIMK files live
+	global imk "$root/data/raw_imk"      // where the VIMK files live
 
 * ==============================================================================
 * 1. Single-file years (2017-2023): just import the spreadsheet and save it
@@ -167,4 +167,4 @@
 		display "   -> VIMK25.dta : `=_N' firms, " c(k) " columns"
 	}
 
-	display "Done. VIMK17.dta ... VIMK25.dta written to data/raw_imk_sampel/"
+	display "Done. VIMK17.dta ... VIMK25.dta written to data/raw_imk/"

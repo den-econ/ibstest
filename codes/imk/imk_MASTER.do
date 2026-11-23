@@ -9,8 +9,9 @@
 *   worker-count definition: Micro = 1-4, Small = 5-19 workers.
 *
 * READ ME !!
-*   1. The raw IMK data lives in  data/raw_imk_sampel/  as VIMK{YY}.dta
-*      (created from the Excel files by convert_imk_dta.do).
+*   1. The raw IMK data lives in  data/raw_imk/  as VIMK{YY}.dta (imported directly).
+*      If you only have the Excel files, set s0_convert = 1 to make the .dta first
+*      (convert_imk_dta.do: xlsx -> .dta).
 *   2. Open Stata in this repo folder (or set $root below), then run this file:
 *        do "code/imk_MASTER.do"
 *   3. Sections 0 and 1 are "run once" steps. Once data/imk_firm.dta exists you
@@ -70,7 +71,7 @@
 *   Each switch below is 1 = run this step, 0 = skip it. The "local" names only
 *   exist while this file runs.
 
-		local s0_convert     1   // Excel VIMK{YY} -> .dta (run once; skips absent Excel)
+		local s0_convert     0   // 0 = use VIMK{YY}.dta directly; set 1 only if raw IMK is still Excel (xlsx -> .dta)
 		local s1_prepare     1   // build data/imk_firm.dta (harmonize all years)
 		local s2a_growth     1   // 2a: output/employment growth by period & industry
 		local s2b_jobless    1   // 2b: labour productivity & jobless growth, ULC
