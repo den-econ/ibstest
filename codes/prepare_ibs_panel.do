@@ -69,10 +69,13 @@
 *   the standard project layout; "capture mkdir" makes each one if it is missing
 *   ("capture" ignores the harmless "already exists" error).
 	global code "$root/codes"           // where the do-files live
-	global data "$root/data"            // where firm_panel.dta is saved
+	global data "$root/data"            // project data folder
+	global out  "$root/data/raw"        // SAVE the built panel HERE: inside raw/ -> gitignored,
+	                                    //   so the panel never leaves via git and stays with the data
 	global fig  "$root/fig"             // figures (unused here; kept for a common layout)
 	global reg  "$root/reg"             // tables  (unused here; kept for a common layout)
 	capture mkdir "$data"
+	capture mkdir "$out"                // make the panel-output folder (data/raw) if missing
 	capture mkdir "$raw"                // $raw was chosen in CONFIG item (5) above
 	capture mkdir "$fig"
 	capture mkdir "$reg"
@@ -246,20 +249,20 @@
 
 	* bring the full stacked panel into memory and save it
 	use `panel', clear
-	save "$data/firm_panel.dta", replace
+	save "$out/firm_panel.dta", replace
 
 * --- [DEFLATOR] (optional, turned off) -----------------------------------------
 *   If you have a sector-year price index (data/deflator.dta: isic2 year defl),
 *   you could divide the nominal values by it here to get real values:
-*     use "$data/firm_panel.dta", clear
+*     use "$out/firm_panel.dta", clear
 *     merge m:1 isic2 year using "$data/deflator.dta", keep(1 3) nogen
 *     replace output = output/defl
 *     replace va     = va/defl
-*     save "$data/firm_panel.dta", replace
+*     save "$out/firm_panel.dta", replace
 
 * --- Labels & final save -------------------------------------------------------
 *   Attach human-readable labels, shrink the file (compress), and save.
-	use "$data/firm_panel.dta", clear
+	use "$out/firm_panel.dta", clear
 	label var fid      "Firm identifier"
 	label var idscheme "Id scheme (link validity)"
 	label var year     "Year"
@@ -272,12 +275,12 @@
 	label var w_prod    "Raw wages, production workers"
 	label var w_nonprod "Raw wages, non-production workers"
 	compress                                 // use the smallest storage type per variable
-	save "$data/firm_panel.dta", replace
+	save "$out/firm_panel.dta", replace
 
 	* also save an Excel copy of the processed dataset (next to the panel)
-	export excel using "$data/firm_panel.xlsx", replace firstrow(variables)
+	export excel using "$out/firm_panel.xlsx", replace firstrow(variables)
 
-	display as result "== saved: $data/firm_panel.dta  +  $data/firm_panel.xlsx =="
+	display as result "== saved: $out/firm_panel.dta  +  $out/firm_panel.xlsx =="
 	tab year                                 // quick count of rows per year
 
 * ===================================================================== *
@@ -288,7 +291,7 @@
 *   re-reads the panel and prints a LOUD warning naming any core column that came
 *   out empty, so a name mismatch is caught at once instead of silently producing
 *   blank results. It changes nothing when every name matches.
-	use "$data/firm_panel.dta", clear
+	use "$out/firm_panel.dta", clear
 	display as text "{hline 72}"
 	display as text "SANITY CHECK (variable names) -- read this before trusting any result"
 	display as text "{hline 72}"

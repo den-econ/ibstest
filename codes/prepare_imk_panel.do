@@ -58,11 +58,14 @@
 *   Defined here so this file never depends on SET_FILEPATHS. "capture mkdir"
 *   makes each folder if it is missing ("capture" ignores "already exists").
 	global code    "$root/codes"           // where the do-files live
-	global data    "$root/data"            // where imk_firm.dta is saved
+	global data    "$root/data"            // project data folder
+	global out     "$root/data/raw"        // SAVE the built panel HERE: inside raw/ -> gitignored,
+	                                       //   so the panel never leaves via git and stays with the data
 	global raw_imk "$root/data/raw_imk"    // raw VIMK files: holds the SAMPLE now; drop the REAL VIMK{YY}.dta here for real data
 	global fig     "$root/fig"             // figures (unused here; kept for a common layout)
 	global reg     "$root/reg"             // tables  (unused here; kept for a common layout)
 	capture mkdir "$data"
+	capture mkdir "$out"                   // make the panel-output folder (data/raw) if missing
 	capture mkdir "$raw_imk"
 	capture mkdir "$fig"
 	capture mkdir "$reg"
@@ -365,8 +368,8 @@
 	label var secgroupB "Sector group B (factor intensity, 4)"
 	order year kbli2 kbli5 secgroupA secgroupB emp output wage input sizeclass
 	compress                                       // shrink storage types to save space
-	save "$data/imk_firm.dta", replace
+	save "$out/imk_firm.dta", replace
 
-	display as result "   -> saved: $data/imk_firm.dta"
+	display as result "   -> saved: $out/imk_firm.dta"
 	tab year                                       // quick check: rows per year
 	capture log close
