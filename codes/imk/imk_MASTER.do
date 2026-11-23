@@ -90,7 +90,7 @@
 	timer on 2                                   // start timing the whole run
 
 	* convert + prepare are ENGINE steps (this repo), under codes/imk/ -> $code/imk/.
-	* The 2a-2e analysis do-files live in the SIBLING project scarring_industry/,
+	* The 2a-2e analysis do-files live in the SIBLING project scarring-industry/,
 	* under codes/imk/ -> $code_scar/imk/.
 	if `s0_convert'     do "$code/imk/convert_imk_dta.do"
 	if `s1_prepare'     do "$code/imk/imk_1_prepare.do"

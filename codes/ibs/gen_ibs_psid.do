@@ -60,7 +60,7 @@
 	// (firms appear/disappear), which is what real data looks like.
 	gen double u = runiform()
 	gen double w = runiform()
-	gen entry = 2010
+	gen entry = 2006                            // baseline firms exist from 2006 (earliest year)
 	gen exit  = 2022
 	replace entry = 2012 + floor(w*4) if u > 0.60 & u <= 0.80   // ~20% enter late
 	replace exit  = 2017 + floor(w*4) if u > 0.80 & u <= 0.95   // ~15% exit early
@@ -72,7 +72,10 @@
 
 * --- (2) For each year: staple psid onto random sample rows -------------------
 	// "foreach y of local years" repeats the block once per year in the list.
-	local years "2010 2011 2012 2013 2014 2015 2017 2018 2019 2020 2021 2022"
+	// 2006-2009 have NO real sample file, so they are FABRICATED by cloning 2010 (see the
+	// loop below). They are listed LAST on purpose: adding them does not shift the random
+	// draws for 2010-2022, so those years stay byte-for-byte identical.
+	local years "2010 2011 2012 2013 2014 2015 2017 2018 2019 2020 2021 2022 2006 2007 2008 2009"
 	foreach y of local years {
 
 		// Firms present this year -> shuffle them -> number them 1,2,3,...
@@ -87,8 +90,32 @@
 		tempfile pres
 		save `pres'
 
+		// Pick the economic source: the real sample file if it exists; otherwise
+		// (2006-2009 have none) CLONE the 2010 sample as a stand-in -- TEST DATA ONLY.
+		local srcfile "$src/mfg`y'.dta"
+		local cloned  0
+		capture confirm file "`srcfile'"
+		if _rc {
+			local srcfile "$src/mfg2010.dta"
+			local cloned  1
+		}
+		use "`srcfile'", clear
+		if `cloned' {
+			// This year has no real sample -> fabricate it from the 2010 template.
+			// (a) retag the year-suffixed column names (10 -> this year's suffix) so
+			//     1_prepare can find them for year `y'. yy = `y'-2000 (e.g. 2006 -> 6).
+			local yy = `y' - 2000
+			foreach stub in Output Iinput Vtlvcu Ltlnou Ekspor Disic5 Zpsvcu Znsvcu {
+				capture rename `stub'10 `stub'`yy'
+			}
+			// (b) jitter the MONEY columns +/-10% so the clone is not identical to 2010;
+			//     leave workers (Ltlnou) and industry (Disic5) alone to keep sizes/sectors.
+			foreach v in Output`yy' Iinput`yy' Vtlvcu`yy' Ekspor`yy' Zpsvcu`yy' Znsvcu`yy' {
+				capture replace `v' = round(`v' * (0.9 + 0.2*runiform()))
+			}
+		}
+
 		// Take that many random rows from the sample, and number them the same way.
-		use "$src/mfg`y'.dta", clear
 		gen double pr = runiform()
 		sort pr
 		gen long rowid = _n

@@ -80,3 +80,6 @@ desktop.ini
 data/panel_imk_sintesis/imk_si_panel_1975_2025.dta
 data/panel_imk_sintesis/imk_panel_2017_2025.dta
 data/panel_imk_sintesis.zip
+
+# Take-home export folder (built by analisis_deskriptif_takehome.do; contains data — not for git)
+export_home/

@@ -48,9 +48,9 @@
 *   These globals are the knobs for the analysis. Every step below reads them.
 
 	*** Data source: always the real microdata in data/raw/mfgYYYY.dta.
-	*   1_prepare.do then checks whether the firm id can link firms across years and
-	*   reports it (link_ok). It never silently swaps in any synthetic/test data, so you
-	*   always know whether you are looking at the real data or a masked file.
+	*   The real firm id links firms across years, so every section runs, including the
+	*   link-based ones (2c/2d/2e). 1_prepare.do never silently swaps in synthetic/test
+	*   data: whatever you put in data/raw is exactly what gets analysed.
 
 	*** (1) Data range (2016 has no raw file; the loop skips it automatically)
 		global year_start   2010
@@ -104,7 +104,7 @@
 	if `s1_prepare' == 1 {
 		do "$code/ibs/1_prepare.do"
 	}
-	* NOTE: the analysis do-files live in the SIBLING project scarring_industry/,
+	* NOTE: the analysis do-files live in the SIBLING project scarring-industry/,
 	* under codes/ibs/, so they are called with $code_scar/ibs/ (not $code).
 	if `s2a_growth' == 1 {
 		do "$code_scar/ibs/2a_growth.do"

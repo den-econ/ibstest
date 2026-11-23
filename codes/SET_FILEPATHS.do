@@ -21,17 +21,17 @@
 		global root "/Users/meizahra/Documents/work/National Economic Council (NEC)/ibstest"
 	}
 
-* --- (2) The analysis project "scarring_industry" (a SIBLING of this repo) ------
+* --- (2) The analysis project "scarring-industry" (a SIBLING of this repo) ------
 *   The analysis do-files (2a-2e, imk_2a-2e, render_sankey) live in a SEPARATE
-*   folder next to this repo -- NOT inside it, under scarring_industry/codes/.
+*   folder next to this repo -- NOT inside it, under scarring-industry/codes/.
 *   We locate the sibling by taking $root's PARENT folder and adding the name.
 *   ustrregexra(s, pattern, "") erases the part of s that matches the pattern; here
 *   "/[^/]+/?$" matches the final "/folder" piece, so erasing it leaves the parent.
 	local _parent = ustrregexra("$root", "/[^/]+/?$", "")
-	global scar_root "`_parent'/scarring_industry"      // the scarring project's root folder
-	global code_scar "$scar_root/codes"                 // its do-files live in codes/
+	global scar_root "`_parent'/scarring-industry"      // the SHARED scarring repo (den-econ/scarring-industry)
+	global code_scar "$scar_root/codes"                 // our analysis do-files live in codes/ (beside their code/)
 *   If this guess is ever wrong on your machine, set the full paths by hand instead:
-*       global scar_root "/full/path/to/scarring_industry"
+*       global scar_root "/full/path/to/scarring-industry"
 *       global code_scar "$scar_root/codes"
 
 * --- (3) Sub-folders -----------------------------------------------------------
@@ -39,16 +39,16 @@
 	global code   "$root/codes"             // engine do-files (master, prepare, shared) -- this repo
 	global data   "$root/data"              // processed/analysis-ready data -- this repo
 	global raw    "$root/data/raw"          // raw BPS microdata (mfgYYYY.dta)  [IBS]
-	global output "$scar_root/output"       // IBS results -> scarring_industry/output/ (NOT in codes/)
-	global reg    "$output"                 // tables  -> scarring_industry/output/
-	global fig    "$output"                 // figures -> scarring_industry/output/
+	global output "$scar_root/output"       // IBS results -> scarring-industry/output/ (NOT in codes/)
+	global reg    "$output"                 // tables  -> scarring-industry/output/
+	global fig    "$output"                 // figures -> scarring-industry/output/
 	capture mkdir "$scar_root"              // make the scarring project folder if it is missing
 	capture mkdir "$output"                 // then its output subfolder ("capture" ignores "exists")
 
 * --- (4) IMK (Industri Mikro & Kecil) folders ----------------------------------
 *   Used by imk_MASTER.do and the imk_*.do files. Kept separate from IBS.
 	global raw_imk    "$root/data/raw_imk_sampel"   // VIMK{YY}.dta (one row per firm)
-	global output_imk "$scar_root/output_imk"       // IMK results -> scarring_industry/ (apart from IBS)
+	global output_imk "$scar_root/output_imk"       // IMK results -> scarring-industry/ (apart from IBS)
 	global reg_imk    "$output_imk"
 	global fig_imk    "$output_imk"
 	capture mkdir "$output_imk"
