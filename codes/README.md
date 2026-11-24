@@ -78,6 +78,7 @@ di folder `ibstest`. **Tanpa paket tambahan** — hanya perintah Stata bawaan.
 | `prepare_imk_panel.do` | **Engine IMK**: (0) convert Excel→dta (opsional), (1) **COLUMN MAP** per tahun + harmonisasi → `data/imk_firm.dta` |
 | `prepare_ibs_roster.do` | **Engine roster IBS**: bahan baku & produk per perusahaan (2021–2022), **COLUMN MAP** per tahun → `data/raw/ibs_input_long.dta`, `data/raw/ibs_output_long.dta` |
 | `merge_ibs_roster.do` | **Gabungan**: menempelkan variabel perusahaan dari `firm_panel.dta` ke kedua roster (`m:1` pada `fid year`) → `data/raw/ibs_input_firm.dta`, `data/raw/ibs_output_firm.dta` |
+| `check_ibs_panel.do` | **Laporan mutu** (hanya membaca): kolom yang hilang per tahun, pangsa *missing*/nol per kelompok variabel, identitas akuntansi, cek rentang, baris duplikat, dan cek panel antar-tahun → log `check_ibs_panel_<tgl>_<jam>.log` (+ dua CSV berisi hitungan di `data/raw/`) |
 
 Folder ini **hanya** berisi engine merging data asli di atas. (Skrip pembuat sampel
 sintetis terdahulu sudah dikeluarkan; lihat `KONTEKS_data_sintesis.md`.)
@@ -177,6 +178,28 @@ survei tidak mencatat bahan baku mana dipakai untuk produk mana.
   `imp_share` (khusus bahan baku).
 - Run **berhenti** bila `fid year` tidak unik di panel untuk tahun roster — seperti di
   data sampel, yang `fid`-nya disensor.
+
+## `check_ibs_panel.do` — laporan mutu panel IBS
+
+Dijalankan **setelah** `prepare_ibs_panel.do`; membaca `data/raw/firm_panel.dta` dan **tidak
+mengubah data apa pun**. Hasil utamanya satu file log; dengan `save_csv = 1` juga dua tabel
+hitungan (tanpa baris perusahaan): `check_ibs_panel_missing.csv` (variabel × tahun) dan
+`check_ibs_panel_checks.csv` (cek × tahun).
+
+1. **Overview**: baris per tahun dan skema id.
+2. **Kolom hilang**: kolom yang kosong seluruhnya pada tahun tertentu.
+3. **Missing dan nol**: pangsa per tahun menurut kelompok variabel (`g_core`, `g_invest`,
+   `g_energy`, … di CONFIG). Nol dan *missing* dilaporkan terpisah.
+4. **Konsistensi dalam tahun**: identitas akuntansi (`identities` di CONFIG), cek rentang,
+   baris duplikat, lompatan median tahunan (perubahan satuan uang), kolom teks yang isinya angka.
+   Juga **plot** log output terhadap modal tetap, investasi, energi dan pajak (meniru Gambar 1
+   Gupta 2023): garis putus-putus = semua baris (nol/*missing* di x = 0), garis utuh = hanya x > 0.
+   PNG disimpan di `data/raw/` karena tiap titik adalah satu perusahaan-tahun.
+5. **Konsistensi antar-tahun**: keunikan id, tautan antar-tahun, entry/exit, lompatan nilai
+   dalam perusahaan, pindah KBLI/provinsi, nilai yang sama persis dengan tahun sebelumnya.
+   Dilewati untuk tahun yang `fid`-nya disensor atau tidak unik — seperti di data sampel.
+
+Pengelompokan variabel mengikuti konvensi nama IBS; periksa dengan kuesioner sebelum dipakai.
 
 ---
 
